@@ -24,7 +24,7 @@ export default withAuth(
         process.env.NODE_ENV === "production"
           ? process.env.DATABASE_URL || ""
           : "postgres://postgres:postgres@localhost:5432/meri-db",
-      useMigrations: false
+      useMigrations: true
     },
     // This config allows us to set up features of the Admin UI https://keystonejs.com/docs/apis/config#ui
     ui: {
