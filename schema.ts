@@ -161,10 +161,10 @@ export const lists = {
               const stringText = shortNodes
                 .map((n) => Node.string(n))
                 .join("\n");
-              // if over 100 char, truncate with "..."
+              // if over 200 char, truncate with "..."
               return (
-                stringText.slice(0, 100) +
-                (stringText.length > 100 ? "..." : "")
+                stringText.slice(0, 200) +
+                (stringText.length > 200 ? "..." : "")
               );
             };
             return serialise(content.document);
