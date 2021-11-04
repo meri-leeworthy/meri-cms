@@ -14,6 +14,11 @@ import { lists } from "./schema";
 // Keystone auth is configured separately - check out the basic auth setup we are importing from our auth file.
 import { withAuth, session } from "./auth";
 
+import {
+  ApolloServerPluginLandingPageGraphQLPlayground,
+  ApolloServerPluginLandingPageDisabled
+} from "apollo-server-core";
+
 export default withAuth(
   // Using the config function helps typescript guide you to the available options.
   config({
@@ -32,6 +37,17 @@ export default withAuth(
       isAccessAllowed: (context) => !!context.session?.data
     },
     lists,
-    session
+    session,
+    graphql: {
+      apolloConfig: {
+        introspection: true, //process.env.NODE_ENV !== "production",
+        plugins: [
+          // process.env.NODE_ENV === "production"
+          //   ? ApolloServerPluginLandingPageDisabled()
+          //   :
+          ApolloServerPluginLandingPageGraphQLPlayground()
+        ]
+      }
+    }
   })
 );
