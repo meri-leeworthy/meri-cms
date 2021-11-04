@@ -23,6 +23,7 @@ model User {
 model Post {
   id          String    @id @default(cuid())
   title       String    @default("")
+  slug        String    @unique @default("")
   status      String?   @default("draft")
   content     Json      @default("[{\"type\":\"paragraph\",\"children\":[{\"text\":\"\"}]}]")
   publishDate DateTime?

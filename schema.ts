@@ -15,7 +15,7 @@ A field: The individual bits of data on your list, each with its own type.
 // Like the `config` function we use in keystone.ts, we use functions
 // for putting in our config so we get useful errors. With typescript,
 // we get these even before code runs.
-import { list } from '@keystone-next/keystone';
+import { list, graphql } from "@keystone-next/keystone";
 
 // We're using some common fields in the starter. Check out https://keystonejs.com/docs/apis/fields#fields-api
 // for the full list of fields.
@@ -25,11 +25,26 @@ import {
   password,
   timestamp,
   select,
-} from '@keystone-next/keystone/fields';
+  virtual
+} from "@keystone-next/keystone/fields";
 // The document field is a more complicated field, so it's in its own package
 // Keystone aims to have all the base field types, but you can make your own
 // custom ones.
-import { document } from '@keystone-next/fields-document';
+import { document } from "@keystone-next/fields-document";
+import { Node } from "slate";
+
+export function defaultSlug({ context, inputData }: any) {
+  const date = new Date();
+  return `${
+    inputData?.title
+      ?.trim()
+      ?.toLowerCase()
+      ?.replace(/[^\w ]+/g, "")
+      ?.replace(/ +/g, "-") ?? ""
+  }-${date?.getFullYear() ?? ""}${date?.getMonth() + 1 ?? ""}${
+    date?.getDate() ?? ""
+  }`;
+}
 
 // We have a users list, a blogs list, and tags for blog posts, so they can be filtered.
 // Each property on the exported object will become the name of a list (a.k.a. the `listKey`),
@@ -43,8 +58,8 @@ export const lists = {
       name: text({ validation: { isRequired: true } }),
       email: text({
         validation: { isRequired: true },
-        isIndexed: 'unique',
-        isFilterable: true,
+        isIndexed: "unique",
+        isFilterable: true
       }),
       // The password field takes care of hiding details and hashing values
       password: password({ validation: { isRequired: true } }),
@@ -52,33 +67,45 @@ export const lists = {
       // we want a user to have many posts, and we are saying that the user
       // should be referencable by the 'author' field of posts.
       // Make sure you read the docs to understand how they work: https://keystonejs.com/docs/guides/relationships#understanding-relationships
-      posts: relationship({ ref: 'Post.author', many: true }),
+      posts: relationship({ ref: "Post.author", many: true })
     },
     // Here we can configure the Admin UI. We want to show a user's name and posts in the Admin UI
     ui: {
       listView: {
-        initialColumns: ['name', 'posts'],
-      },
-    },
+        initialColumns: ["name", "posts"]
+      }
+    }
   }),
   // Our second list is the Posts list. We've got a few more fields here
   // so we have all the info we need for displaying posts.
   Post: list({
     fields: {
       title: text(),
+      slug: text({
+        ui: { createView: { fieldMode: "hidden" } },
+        isIndexed: "unique",
+        hooks: {
+          resolveInput: ({ operation, resolvedData, inputData, context }) => {
+            if (operation === "create" && !inputData.slug) {
+              return defaultSlug({ context, inputData });
+            }
+            return resolvedData.slug;
+          }
+        }
+      }),
       // Having the status here will make it easy for us to choose whether to display
       // posts on a live site.
       status: select({
         options: [
-          { label: 'Published', value: 'published' },
-          { label: 'Draft', value: 'draft' },
+          { label: "Published", value: "published" },
+          { label: "Draft", value: "draft" }
         ],
         // We want to make sure new posts start off as a draft when they are created
-        defaultValue: 'draft',
+        defaultValue: "draft",
         // fields also have the ability to configure their appearance in the Admin UI
         ui: {
-          displayMode: 'segmented-control',
-        },
+          displayMode: "segmented-control"
+        }
       }),
       // The document field can be used for making highly editable content. Check out our
       // guide on the document field https://keystonejs.com/docs/guides/document-fields#how-to-use-document-fields
@@ -90,47 +117,70 @@ export const lists = {
           [1, 1, 1],
           [2, 1],
           [1, 2],
-          [1, 2, 1],
+          [1, 2, 1]
         ],
         links: true,
-        dividers: true,
+        dividers: true
       }),
       publishDate: timestamp(),
       // Here is the link from post => author.
       // We've configured its UI display quite a lot to make the experience of editing posts better.
       author: relationship({
-        ref: 'User.posts',
+        ref: "User.posts",
         ui: {
-          displayMode: 'cards',
-          cardFields: ['name', 'email'],
-          inlineEdit: { fields: ['name', 'email'] },
+          displayMode: "cards",
+          cardFields: ["name", "email"],
+          inlineEdit: { fields: ["name", "email"] },
           linkToItem: true,
-          inlineCreate: { fields: ['name', 'email'] },
-        },
+          inlineCreate: { fields: ["name", "email"] }
+        }
       }),
       // We also link posts to tags. This is a many <=> many linking.
       tags: relationship({
-        ref: 'Tag.posts',
+        ref: "Tag.posts",
         ui: {
-          displayMode: 'cards',
-          cardFields: ['name'],
-          inlineEdit: { fields: ['name'] },
+          displayMode: "cards",
+          cardFields: ["name"],
+          inlineEdit: { fields: ["name"] },
           linkToItem: true,
           inlineConnect: true,
-          inlineCreate: { fields: ['name'] },
+          inlineCreate: { fields: ["name"] }
         },
-        many: true,
+        many: true
       }),
-    },
+      snippet: virtual({
+        field: graphql.field({
+          type: graphql.String,
+          async resolve(item, args, context) {
+            const { content } = await context.query.Post.findOne({
+              where: { id: item.id.toString() },
+              query: "content { document }"
+            });
+            const serialise = (nodes: Node[]) => {
+              const shortNodes = nodes.slice(0, 2);
+              const stringText = shortNodes
+                .map((n) => Node.string(n))
+                .join("\n");
+              // if over 100 char, truncate with "..."
+              return (
+                stringText.slice(0, 100) +
+                (stringText.length > 100 ? "..." : "")
+              );
+            };
+            return serialise(content.document);
+          }
+        })
+      })
+    }
   }),
   // Our final list is the tag list. This field is just a name and a relationship to posts
   Tag: list({
     ui: {
-      isHidden: true,
+      isHidden: true
     },
     fields: {
       name: text(),
-      posts: relationship({ ref: 'Post.tags', many: true }),
-    },
-  }),
+      posts: relationship({ ref: "Post.tags", many: true })
+    }
+  })
 };
