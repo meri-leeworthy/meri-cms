@@ -142,7 +142,7 @@ type Post {
     skip: Int! = 0
   ): [Tag!]
   tagsCount(where: TagWhereInput! = {}): Int
-  snippet: String
+  plaintext: String
 }
 
 type Post_content_Document {

@@ -46,6 +46,12 @@ export function defaultSlug({ context, inputData }: any) {
   }`;
 }
 
+const serialise = (nodes: Node[]) => {
+  const shortNodes = nodes.slice(0, 2);
+  const stringText = shortNodes.map((n) => Node.string(n)).join("\n");
+  return stringText;
+};
+
 // We have a users list, a blogs list, and tags for blog posts, so they can be filtered.
 // Each property on the exported object will become the name of a list (a.k.a. the `listKey`),
 // with the value being the definition of the list, including the fields.
@@ -148,7 +154,7 @@ export const lists = {
         },
         many: true
       }),
-      snippet: virtual({
+      plaintext: virtual({
         field: graphql.field({
           type: graphql.String,
           async resolve(item, args, context) {
@@ -156,17 +162,6 @@ export const lists = {
               where: { id: item.id.toString() },
               query: "content { document }"
             });
-            const serialise = (nodes: Node[]) => {
-              const shortNodes = nodes.slice(0, 2);
-              const stringText = shortNodes
-                .map((n) => Node.string(n))
-                .join("\n");
-              // if over 200 char, truncate with "..."
-              return (
-                stringText.slice(0, 200) +
-                (stringText.length > 200 ? "..." : "")
-              );
-            };
             return serialise(content.document);
           }
         })
