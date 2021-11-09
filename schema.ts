@@ -32,6 +32,7 @@ import {
 // custom ones.
 import { document } from "@keystone-next/fields-document";
 import { Node } from "slate";
+import { deployFrontend } from "./lib/deploy";
 
 export function defaultSlug({ context, inputData }: any) {
   const date = new Date();
@@ -47,8 +48,7 @@ export function defaultSlug({ context, inputData }: any) {
 }
 
 const serialise = (nodes: Node[]) => {
-  const shortNodes = nodes.slice(0, 2);
-  const stringText = shortNodes.map((n) => Node.string(n)).join("\n");
+  const stringText = nodes.map((n) => Node.string(n)).join("\n");
   return stringText;
 };
 
@@ -166,6 +166,11 @@ export const lists = {
           }
         })
       })
+    },
+    hooks: {
+      afterOperation: () => {
+        deployFrontend();
+      }
     }
   }),
   // Our final list is the tag list. This field is just a name and a relationship to posts
