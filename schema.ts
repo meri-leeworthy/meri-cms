@@ -33,6 +33,31 @@ import {
 import { document } from "@keystone-next/fields-document";
 import { Node } from "slate";
 import { deployFrontend } from "./lib/deploy";
+import { componentBlocks } from "./componentBlocks";
+import { S3ImagesConfig, s3Images } from "@k6-contrib/fields-s3-images";
+import "dotenv/config";
+import { cloudinaryImage } from "@keystone-next/cloudinary";
+
+const s3Config: S3ImagesConfig = {
+  bucket: process.env.S3_BUCKET || "", // name of bucket
+  folder: process.env.S3_PATH,
+  baseUrl: process.env.S3_BASE_URL, // if provided the url is not compouted from endpoint and folder, rather use this as `${baseUrl}/${filename}`
+  s3Options: {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    endpoint: process.env.S3_ENDPOINT // use region for aws, endpoint for s3 compatible storage
+  },
+  sizes: {
+    sm: 360,
+    md: 720,
+    lg: 1280
+  },
+  uploadParams() {
+    return {
+      ACL: "public-read" // needed to make it public
+    };
+  }
+};
 
 export function defaultSlug({ context, inputData }: any) {
   const date = new Date();
@@ -117,6 +142,9 @@ export const lists = {
       // guide on the document field https://keystonejs.com/docs/guides/document-fields#how-to-use-document-fields
       // for more information
       content: document({
+        ui: {
+          views: require.resolve("./componentBlocks")
+        },
         formatting: true,
         layouts: [
           [1, 1],
@@ -126,7 +154,15 @@ export const lists = {
           [1, 2, 1]
         ],
         links: true,
-        dividers: true
+        dividers: true,
+        relationships: {
+          image: {
+            kind: "prop",
+            listKey: "Image",
+            selection: "id description image { publicUrlTransformed }"
+          }
+        },
+        componentBlocks
       }),
       publishDate: timestamp(),
       // Here is the link from post => author.
@@ -166,6 +202,7 @@ export const lists = {
           }
         })
       })
+      // image: s3Images({ s3Config })
     },
     hooks: {
       afterOperation: () => {
@@ -181,6 +218,19 @@ export const lists = {
     fields: {
       name: text(),
       posts: relationship({ ref: "Post.tags", many: true })
+    }
+  }),
+  Image: list({
+    fields: {
+      image: cloudinaryImage({
+        cloudinary: {
+          cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+          apiKey: process.env.CLOUDINARY_API_KEY || "",
+          apiSecret: process.env.CLOUDINARY_API_SECRET || "",
+          folder: process.env.CLOUDINARY_API_FOLDER
+        }
+      }),
+      description: text()
     }
   })
 };

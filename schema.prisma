@@ -39,3 +39,9 @@ model Tag {
   name  String @default("")
   posts Post[] @relation("Post_tags_Tag_posts")
 }
+
+model Image {
+  id          String @id @default(cuid())
+  image       Json?
+  description String @default("")
+}

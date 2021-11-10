@@ -1,4 +1,9 @@
 export const deployFrontend = () => {
+  if (!process.env.DEPLOY_KEY) {
+    console.log("No deploy key.");
+    return;
+  }
+
   const https = require("https");
 
   const options = {
