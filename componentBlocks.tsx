@@ -2,7 +2,7 @@ import React from "react";
 import {
   component,
   fields,
-  NotEditable
+  NotEditable,
 } from "@keystone-next/fields-document/component-blocks";
 
 // naming the export componentBlocks is important because the Admin UI
@@ -41,6 +41,7 @@ export const componentBlocks = {
           <img
             src={data?.image?.publicUrlTransformed}
             alt={data?.description}
+            style={{ width: "100%" }}
           />
         </NotEditable>
       );
@@ -49,10 +50,10 @@ export const componentBlocks = {
     props: {
       image: fields.relationship<"one">({
         label: "Image",
-        relationship: "image"
-      })
-    }
-  })
+        relationship: "image",
+      }),
+    },
+  }),
 };
 
 // const hi = {
