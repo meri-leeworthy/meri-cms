@@ -184,8 +184,8 @@ export const lists = {
       }),
       description: text(),
     },
+    ui: {
+      labelField: "description",
+    },
   }),
-  ui: {
-    labelField: "description",
-  },
 };
